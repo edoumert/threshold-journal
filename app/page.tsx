@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { useRouter } from 'next/navigation'
 
 type Mode = 'login' | 'signup' | 'forgot'
 
@@ -11,6 +12,33 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const router = useRouter()
+
+  useEffect(() => {
+    // Handle tokens in URL (magic links, password reset)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const accessToken = hashParams.get('access_token')
+    const refreshToken = hashParams.get('refresh_token')
+    const type = hashParams.get('type')
+
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(({ data }) => {
+          if (data.session) {
+            if (type === 'recovery') {
+              router.push('/reset-password')
+            } else {
+              router.push('/pre-trade')
+            }
+          }
+        })
+    }
+
+    // Check if already logged in
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) router.push('/pre-trade')
+    })
+  }, [])
 
   const handleLogin = async () => {
     if (!email || !password) { setError('Please enter your email and password'); return }
@@ -24,13 +52,9 @@ export default function LoginPage() {
     if (!email || !password) { setError('Please enter your email and password'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
     setLoading(true); setError('')
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: 'https://journal.erindoumert.com/pre-trade' }
-    })
+    const { error } = await supabase.auth.signUp({ email, password })
     if (error) setError(error.message)
-    else setMessage('Account created! Check your email to confirm, then log in.')
+    else setMessage('Account created! You can now log in.')
     setLoading(false)
   }
 
@@ -38,7 +62,7 @@ export default function LoginPage() {
     if (!email) { setError('Please enter your email'); return }
     setLoading(true); setError('')
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://journal.erindoumert.com/reset-password'
+      redirectTo: 'https://journal.erindoumert.com/'
     })
     if (error) setError(error.message)
     else setMessage('Password reset email sent! Check your inbox.')
@@ -71,7 +95,6 @@ export default function LoginPage() {
 
         {message ? (
           <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '48px', marginBottom: '16px' }}>✉️</p>
             <p style={{ color: '#9ca3af', fontSize: '15px', lineHeight: '1.7', marginBottom: '24px' }}>{message}</p>
             <button style={linkStyle} onClick={() => { setMessage(''); setMode('login') }}>Back to login</button>
           </div>
