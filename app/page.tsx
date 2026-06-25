@@ -21,7 +21,7 @@ export default function LoginPage() {
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError(error.message)
-      else window.location.href = '/journal'
+      else window.location.href = '/pre-trade'
     }
     setLoading(false)
   }

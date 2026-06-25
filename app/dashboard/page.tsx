@@ -89,8 +89,20 @@ export default function DashboardPage() {
               const preEntry = dayEntries.find(e => e.session_type === 'pre')
               const postEntry = dayEntries.find(e => e.session_type === 'post')
               const isToday = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year
+              const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+              const hasEntries = dayEntries.length > 0
               return (
-                <div key={day} style={{ background: dayEntries.length > 0 ? '#1a2332' : '#0d1421', border: isToday ? '1px solid #22d3ee' : '1px solid #1e3a5f', borderRadius:'8px', padding:'8px', minHeight:'80px' }}>
+                <div
+                  key={day}
+                  onClick={() => hasEntries && (window.location.href = `/day/${dateStr}`)}
+                  style={{
+                    background: hasEntries ? '#1a2332' : '#0d1421',
+                    border: isToday ? '1px solid #22d3ee' : '1px solid #1e3a5f',
+                    borderRadius:'8px', padding:'8px', minHeight:'80px',
+                    cursor: hasEntries ? 'pointer' : 'default',
+                    transition:'all 0.15s'
+                  }}
+                >
                   <p style={{ color: isToday ? '#22d3ee' : '#6b7280', fontSize:'12px', margin:'0 0 6px' }}>{day}</p>
                   {preEntry && <div style={{ background:'#0e2a3a', borderRadius:'4px', padding:'3px 6px', marginBottom:'4px' }}><p style={{ color:'#22d3ee', fontSize:'11px', margin:0 }}>R: {preEntry.readiness_score}/10</p></div>}
                   {postEntry && postEntry.mental_game_level && <div style={{ background:'#1e3a5f', borderRadius:'4px', padding:'3px 6px', marginBottom:'2px' }}><p style={{ color:levelColor[postEntry.mental_game_level], fontSize:'11px', margin:0 }}>M: {postEntry.mental_game_level}</p></div>}
