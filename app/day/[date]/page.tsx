@@ -16,8 +16,17 @@ export default function DayPage({ params }: { params: { date: string } }) {
   }, [])
 
   const loadEntries = async (userId: string) => {
-    const { data } = await supabase.from('journal_entries').select('*').eq('user_id', userId).eq('entry_date', params.date)
-    if (data) setEntries(data)
+    const { data } = await supabase
+      .from('journal_entries')
+      .select('*')
+      .eq('user_id', userId)
+    if (data) {
+      const filtered = data.filter(e => {
+        const entryDate = e.entry_date || e.created_at?.substring(0, 10)
+        return entryDate === params.date
+      })
+      setEntries(filtered)
+    }
     setLoading(false)
   }
 
@@ -48,6 +57,7 @@ export default function DayPage({ params }: { params: { date: string } }) {
         {!loading && entries.length === 0 && (
           <div style={st.card}>
             <p style={{ color:'#6b7280' }}>No entries for this day.</p>
+            <a href="/pre-trade" style={{ color:'#22d3ee', fontSize:'14px' }}>+ Add Pre-Trade entry</a>
           </div>
         )}
 
