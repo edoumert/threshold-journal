@@ -3,88 +3,40 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { useRouter } from 'next/navigation'
 
-type Mode = 'login' | 'signup' | 'forgot'
-
 export default function LoginPage() {
-  const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
   const router = useRouter()
 
   useEffect(() => {
-    // Handle tokens in URL (magic links, password reset)
     const hashParams = new URLSearchParams(window.location.hash.substring(1))
     const accessToken = hashParams.get('access_token')
     const refreshToken = hashParams.get('refresh_token')
-    const type = hashParams.get('type')
 
     if (accessToken && refreshToken) {
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
         .then(({ data }) => {
-          if (data.session) {
-            if (type === 'recovery') {
-              router.push('/reset-password')
-            } else {
-              router.push('/pre-trade')
-            }
-          }
+          if (data.session) router.push('/pre-trade')
         })
     }
 
-    // Check if already logged in
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) router.push('/pre-trade')
     })
   }, [])
 
-  const handleLogin = async () => {
-    if (!email || !password) { setError('Please enter your email and password'); return }
-    setLoading(true); setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
-    setLoading(false)
-  }
-
-  const handleSignup = async () => {
-    if (!email || !password) { setError('Please enter your email and password'); return }
-    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
-    setLoading(true); setError('')
-    const { error } = await supabase.auth.signUp({ email, password })
-    if (error) setError(error.message)
-    else setMessage('Account created! You can now log in.')
-    setLoading(false)
-  }
-
-  const handleForgot = async () => {
+  const handleMagicLink = async () => {
     if (!email) { setError('Please enter your email'); return }
     setLoading(true); setError('')
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://journal.erindoumert.com/'
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: 'https://journal.erindoumert.com/' }
     })
     if (error) setError(error.message)
-    else setMessage('Password reset email sent! Check your inbox.')
+    else setSent(true)
     setLoading(false)
-  }
-
-  const inputStyle = {
-    width: '100%', padding: '12px', marginBottom: '16px',
-    background: '#1f2937', border: '1px solid #374151',
-    borderRadius: '8px', color: 'white', fontSize: '16px',
-    boxSizing: 'border-box' as const
-  }
-
-  const btnStyle = {
-    width: '100%', padding: '14px', background: '#22d3ee',
-    color: '#0a0f1e', border: 'none', borderRadius: '8px',
-    fontSize: '16px', fontWeight: 'bold' as const, cursor: 'pointer'
-  }
-
-  const linkStyle = {
-    background: 'none', border: 'none', color: '#22d3ee',
-    cursor: 'pointer', fontSize: '14px', textDecoration: 'underline'
   }
 
   return (
@@ -93,59 +45,42 @@ export default function LoginPage() {
         <h1 style={{ color: '#22d3ee', fontSize: '28px', marginBottom: '8px', textAlign: 'center' }}>The Threshold Journal</h1>
         <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '32px', fontSize: '14px' }}>Trade with clarity, regulation & control</p>
 
-        {message ? (
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ color: '#9ca3af', fontSize: '15px', lineHeight: '1.7', marginBottom: '24px' }}>{message}</p>
-            <button style={linkStyle} onClick={() => { setMessage(''); setMode('login') }}>Back to login</button>
-          </div>
-        ) : (
+        {!sent ? (
           <>
-            {mode === 'forgot' ? (
-              <>
-                <p style={{ color: '#9ca3af', fontSize: '14px', marginBottom: '20px', textAlign: 'center' }}>
-                  Enter your email and we'll send you a link to reset your password.
-                </p>
-                <input type="email" placeholder="Your email address" value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleForgot()}
-                  style={inputStyle} />
-                {error && <p style={{ color: '#f87171', marginBottom: '12px', fontSize: '14px' }}>{error}</p>}
-                <button onClick={handleForgot} disabled={loading} style={btnStyle}>
-                  {loading ? 'Sending...' : 'Send Reset Link →'}
-                </button>
-                <p style={{ textAlign: 'center', marginTop: '20px' }}>
-                  <button style={linkStyle} onClick={() => { setMode('login'); setError('') }}>Back to login</button>
-                </p>
-              </>
-            ) : (
-              <>
-                <input type="email" placeholder="Your email address" value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  style={inputStyle} />
-                <input type="password" placeholder="Password" value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && (mode === 'login' ? handleLogin() : handleSignup())}
-                  style={inputStyle} />
-                {error && <p style={{ color: '#f87171', marginBottom: '12px', fontSize: '14px' }}>{error}</p>}
-                <button onClick={mode === 'login' ? handleLogin : handleSignup} disabled={loading} style={btnStyle}>
-                  {loading ? 'Please wait...' : mode === 'login' ? 'Sign In →' : 'Create Account →'}
-                </button>
-
-                {mode === 'login' && (
-                  <p style={{ textAlign: 'center', marginTop: '12px' }}>
-                    <button style={linkStyle} onClick={() => { setMode('forgot'); setError('') }}>Forgot password?</button>
-                  </p>
-                )}
-
-                <p style={{ textAlign: 'center', marginTop: '20px', color: '#6b7280', fontSize: '14px' }}>
-                  {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-                  <button style={linkStyle} onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError('') }}>
-                    {mode === 'login' ? 'Sign up' : 'Log in'}
-                  </button>
-                </p>
-              </>
-            )}
+            <p style={{ color: '#9ca3af', fontSize: '14px', marginBottom: '20px', textAlign: 'center', lineHeight: '1.6' }}>
+              Enter your email and we'll send you a magic link to sign in instantly — no password needed.
+            </p>
+            <input
+              type="email"
+              placeholder="Your email address"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleMagicLink()}
+              style={{ width: '100%', padding: '12px', marginBottom: '16px', background: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: 'white', fontSize: '16px', boxSizing: 'border-box' as const }}
+            />
+            {error && <p style={{ color: '#f87171', marginBottom: '12px', fontSize: '14px' }}>{error}</p>}
+            <button
+              onClick={handleMagicLink}
+              disabled={loading}
+              style={{ width: '100%', padding: '14px', background: '#22d3ee', color: '#0a0f1e', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              {loading ? 'Sending...' : 'Send Magic Link →'}
+            </button>
           </>
+        ) : (
+          <div style={{ textAlign: 'center' as const }}>
+            <p style={{ fontSize: '48px', marginBottom: '16px' }}>✉️</p>
+            <h2 style={{ color: '#22d3ee', fontSize: '22px', marginBottom: '12px' }}>Check your email!</h2>
+            <p style={{ color: '#9ca3af', fontSize: '15px', lineHeight: '1.7' }}>
+              We sent a magic link to <strong style={{ color: 'white' }}>{email}</strong>. Click the link to sign in instantly.
+            </p>
+            <button
+              onClick={() => { setSent(false); setEmail('') }}
+              style={{ marginTop: '24px', background: 'transparent', border: '1px solid #374151', color: '#6b7280', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}
+            >
+              Use a different email
+            </button>
+          </div>
         )}
       </div>
     </main>
