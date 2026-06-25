@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'32px' }}>
           <h1 style={{ color:'#22d3ee', fontSize:'28px', margin:0 }}>Your Dashboard</h1>
           <div style={{ display:'flex', gap:'12px' }}>
-            <a href="/pre-trade" style={{ color:'white', textDecoration:'none', fontSize:'14px', padding:'10px 20px', background:'#22d3ee', borderRadius:'8px', fontWeight:'bold', color:'#0a0f1e' }}>+ Pre-Trade</a>
+            <a href="/pre-trade" style={{ color:'white', textDecoration:'none', fontSize:'14px', padding:'10px 20px', background:'#22d3ee', borderRadius:'8px', fontWeight:'bold' }}>+ Pre-Trade</a>
             <a href="/post-trade" style={{ color:'#22d3ee', textDecoration:'none', fontSize:'14px', padding:'10px 20px', border:'1px solid #22d3ee', borderRadius:'8px' }}>+ Post-Trade</a>
             <button onClick={signOut} style={{ background:'transparent', border:'1px solid #374151', color:'#6b7280', padding:'10px 16px', borderRadius:'8px', cursor:'pointer', fontSize:'14px' }}>Sign Out</button>
           </div>
