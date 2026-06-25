@@ -1,10 +1,11 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { supabase } from '../../supabase'
 
 const levelColor: Record<string,string> = { A:'#34d399', B:'#22d3ee', C:'#f87171' }
 
-export default function DayPage({ params }: { params: { date: string } }) {
+export default function DayPage({ params }: { params: Promise<{ date: string }> }) {
+  const { date } = use(params)
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -23,7 +24,7 @@ export default function DayPage({ params }: { params: { date: string } }) {
     if (data) {
       const filtered = data.filter(e => {
         const entryDate = e.entry_date || e.created_at?.substring(0, 10)
-        return entryDate === params.date
+        return entryDate === date
       })
       setEntries(filtered)
     }
@@ -46,7 +47,7 @@ export default function DayPage({ params }: { params: { date: string } }) {
       <div style={{ maxWidth:'720px', margin:'0 auto' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'32px' }}>
           <div>
-            <h1 style={{ color:'#22d3ee', fontSize:'28px', margin:0 }}>{params.date}</h1>
+            <h1 style={{ color:'#22d3ee', fontSize:'28px', margin:0 }}>{date}</h1>
             <p style={{ color:'#6b7280', margin:'4px 0 0', fontSize:'14px' }}>Journal Entry</p>
           </div>
           <a href="/dashboard" style={{ color:'#22d3ee', textDecoration:'none', fontSize:'14px', padding:'8px 16px', border:'1px solid #22d3ee', borderRadius:'8px' }}>← Dashboard</a>
