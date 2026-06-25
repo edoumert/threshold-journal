@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { useRouter } from 'next/navigation'
 
@@ -8,7 +8,21 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [ready, setReady] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const accessToken = hashParams.get('access_token')
+    const refreshToken = hashParams.get('refresh_token')
+    
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(() => setReady(true))
+    } else {
+      setError('Invalid or expired reset link. Please request a new one.')
+    }
+  }, [])
 
   const handleReset = async () => {
     if (!password || password.length < 6) { setError('Password must be at least 6 characters'); return }
@@ -26,7 +40,9 @@ export default function ResetPassword() {
         <p style={{ color: '#6b7280', textAlign: 'center', marginBottom: '32px', fontSize: '14px' }}>The Threshold Journal</p>
         {message ? (
           <p style={{ color: '#9ca3af', textAlign: 'center' }}>{message}</p>
-        ) : (
+        ) : error && !ready ? (
+          <p style={{ color: '#f87171', textAlign: 'center' }}>{error}</p>
+        ) : ready ? (
           <>
             <input type="password" placeholder="New password (min 6 characters)" value={password}
               onChange={e => setPassword(e.target.value)}
@@ -38,6 +54,8 @@ export default function ResetPassword() {
               {loading ? 'Updating...' : 'Set New Password →'}
             </button>
           </>
+        ) : (
+          <p style={{ color: '#9ca3af', textAlign: 'center' }}>Loading...</p>
         )}
       </div>
     </main>
